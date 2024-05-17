@@ -5,12 +5,31 @@ class TemplateEngine {
   ) {}
 
   parse() {
+    return this.parseNew();
+  }
+
+  parseNew(): ParsedTemplate {
     let parsedTemplate = this.template;
     this.variables.forEach((value, key) => {
       parsedTemplate = parsedTemplate.replaceAll(`\$\{${key}\}`, value);
     });
 
-    return parsedTemplate;
+    return new ParsedTemplate(parsedTemplate, []);
+  }
+}
+
+class TemplateWarning {
+  constructor(readonly message: string) {}
+}
+
+class ParsedTemplate {
+  constructor(
+    readonly text: string,
+    readonly warnings: ReadonlyArray<TemplateWarning>
+  ) {}
+
+  containsWarnings() {
+    return this.warnings.length > 0;
   }
 }
 
@@ -19,7 +38,7 @@ describe('The Template Engine', () => {
     const template = 'This is a template without variables';
     const variables = new Map<string, string>();
 
-    const parsedTemplate = new TemplateEngine(template, variables).parse();
+    const parsedTemplate = new TemplateEngine(template, variables).parse().text;
 
     expect(parsedTemplate).toBe(template);
   });
@@ -29,7 +48,7 @@ describe('The Template Engine', () => {
     const variables = new Map<string, string>();
     variables.set('variable', 'foo');
 
-    const parsedTemplate = new TemplateEngine(template, variables).parse();
+    const parsedTemplate = new TemplateEngine(template, variables).parse().text;
 
     expect(parsedTemplate).toBe('This is a template with variable foo');
   });
@@ -40,7 +59,7 @@ describe('The Template Engine', () => {
     variables.set('variable', 'foo');
     variables.set('anotherVariable', 'bar');
 
-    const parsedTemplate = new TemplateEngine(template, variables).parse();
+    const parsedTemplate = new TemplateEngine(template, variables).parse().text;
 
     expect(parsedTemplate).toBe('This is a template with multiple variables foo and bar');
   });
@@ -50,8 +69,21 @@ describe('The Template Engine', () => {
     const variables = new Map<string, string>();
     variables.set('variable', 'foo');
 
-    const parsedTemplate = new TemplateEngine(template, variables).parse();
+    const parsedTemplate = new TemplateEngine(template, variables).parse().text;
 
     expect(parsedTemplate).toBe('This is a template with multiple variables foo and foo');
+  });
+
+  it('parses template with repeated variable', () => {
+    const template = '${user}';
+    const variables = new Map<string, string>();
+    variables.set('user', 'John');
+    variables.set('age', '35');
+    const aDate = new Date().toString();
+    variables.set('date', aDate);
+
+    const parsedTemplate = new TemplateEngine(template, variables).parse().text;
+
+    expect(parsedTemplate).toBe('John');
   });
 });
