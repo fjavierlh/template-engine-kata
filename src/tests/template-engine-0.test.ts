@@ -4,11 +4,23 @@ class TemplateEngine {
     private readonly variables: Map<string, string>
   ) {}
 
+  static create(template: string, variables: Map<string, string>) {
+    if (template == null) {
+      return new ParsedTemplate('', [new TemplateWarning('Text is not defined')]);
+    }
+
+    return new TemplateEngine(template, variables);
+  }
+
   parse() {
     return this.parseNew();
   }
 
   parseNew(): ParsedTemplate {
+    if (this.variables == null) {
+      return ParsedTemplate.create(this.template, [new TemplateWarning('Variables is not defined')]);
+    }
+
     let parsedText = this.template;
     const warnings: TemplateWarning[] = [];
     this.variables.forEach((value, key) => {
@@ -17,7 +29,7 @@ class TemplateEngine {
         warnings.push(new TemplateWarning(`Variable ${key} not found in template`));
       }
     });
-    const parsedTemplate = new ParsedTemplate(parsedText, warnings);
+    const parsedTemplate = ParsedTemplate.create(parsedText, warnings);
 
     return this.addNotReplacedVariablesWarning(parsedTemplate);
   }
@@ -49,6 +61,14 @@ class ParsedTemplate {
     readonly text: string,
     readonly warnings: ReadonlyArray<TemplateWarning>
   ) {}
+
+  static create(text: string, warnings: ReadonlyArray<TemplateWarning>) {
+    if (text == null) {
+      return new ParsedTemplate('', [new TemplateWarning('Template is not defined')]);
+    }
+
+    return new ParsedTemplate(text, warnings);
+  }
 
   containsWarnings() {
     return this.warnings.length > 0;
@@ -136,5 +156,27 @@ describe('The Template Engine', () => {
     expect(parsedTemplate.containsWarnings()).toBe(true);
     expect(parsedTemplate.warnings[0].message).toBe('Variable user was no replaced');
     expect(parsedTemplate.warnings[1].message).toBe('Variable age was no replaced');
+  });
+
+  it('warns when the variables is not defined', () => {
+    const template = 'text';
+    const variables = null;
+
+    const parsedTemplate = new TemplateEngine(template, variables).parse();
+
+    expect(parsedTemplate.text).toBe('text');
+    expect(parsedTemplate.containsWarnings()).toBe(true);
+    expect(parsedTemplate.warnings[0].message).toBe('Variables is not defined');
+  });
+
+  it('warns when the template is not defined', () => {
+    const template = null;
+    const variables = new Map<string, string>();
+
+    const parsedTemplate = new TemplateEngine(template, variables).parse();
+
+    expect(parsedTemplate.text).toBe('');
+    expect(parsedTemplate.containsWarnings()).toBe(true);
+    expect(parsedTemplate.warnings[0].message).toBe('Template is not defined');
   });
 });
