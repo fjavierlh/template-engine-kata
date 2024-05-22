@@ -7,7 +7,8 @@
         "jsx": "react",
         "noImplicitAny": false,
         "sourceMap": true, 
-        "outDir":"./lib/"
+        "outDir":"./lib/",
+        "strictNullChecks": false
     },
     "include": [
         "src/**/*"
